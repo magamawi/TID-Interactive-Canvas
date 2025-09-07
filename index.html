@@ -202,13 +202,14 @@
 }
 </style>
 
+
 <div class="tid-heading">Enterprise Pre-Business<br>Definition Audit Canvas</div>
 
 <div class="tid-toolbar">
   <button id="tid-toggle-drawer">Document Dock</button>
   <button id="tid-fullscreen">Fullscreen Canvas</button>
   <button id="tid-open-colors">Note Colors</button>
-  <span class="tid-helper">Double-click a note to expand. Click outside to collapse. Drag by "⋮⋮".</span>
+  <span class="tid-helper">Double-click a note to expand. Click outside to collapse. Drag by “⋮⋮”.</span>
 </div>
 
 <div class="tid-board" id="tid-board">
@@ -289,117 +290,215 @@
         <div class="actions"><button id="tid-add-pdf">+ Add PDF</button></div>
       </header>
       <div class="content" id="tid-drawer-docs">
-        <p class="tid-helper" style="margin:0">No documents attached yet.</p>
+        <input id="tid-attach-pdfs" type="file" accept="application/pdf" multiple style="display:none">
+        <p class="tid-helper" style="margin-top:0">Add PDFs to reference while you work. Click “Fullscreen” to expand.</p>
       </div>
     </section>
   </div>
 </aside>
 
-<!-- Print Modal -->
-<div id="tid-print-modal">
+<!-- Output Options Modal -->
+<div id="tid-print-modal" role="dialog" aria-modal="true" aria-labelledby="tid-print-title">
   <div class="card">
-    <h3>Print Options</h3>
+    <h3 id="tid-print-title">Output options</h3>
     <fieldset>
       <legend>Content</legend>
       <div class="row">
-        <label><input type="radio" name="printContent" value="detailed" checked> Detailed (titles + body)</label>
-        <label><input type="radio" name="printContent" value="titles"> Titles only</label>
+        <label><input type="radio" name="printContent" value="titles" checked> Titles only</label>
+        <label><input type="radio" name="printContent" value="detailed"> Detailed (title + body)</label>
       </div>
     </fieldset>
     <fieldset>
       <legend>Layout</legend>
       <div class="row">
-        <label><input type="radio" name="printFit" value="multi" checked> Multi-page</label>
-        <label><input type="radio" name="printFit" value="fit-one"> Fit all on one page</label>
+        <label><input type="radio" name="printFit" value="fit-one" checked> Fit the canvas on one page</label>
+        <label><input type="radio" name="printFit" value="multi"> Expand to multiple pages</label>
       </div>
     </fieldset>
     <div class="actions">
       <button id="tid-print-cancel">Cancel</button>
-      <button id="tid-print-go" class="primary">Print</button>
+      <button id="tid-print-go" class="primary">Continue</button>
     </div>
   </div>
 </div>
 
-<!-- Color Modal -->
-<div id="tid-color-modal">
+<!-- Color Options Modal -->
+<div id="tid-color-modal" role="dialog" aria-modal="true" aria-labelledby="tid-color-title">
   <div class="card">
-    <h3>Zone Default Colors</h3>
+    <h3 id="tid-color-title">Note colors per block</h3>
     <div class="color-grid">
-      <div>Scope</div>
-      <div class="sw c1" data-zone="scope" data-color="1"></div>
-      <div class="sw c2" data-zone="scope" data-color="2"></div>
-      <div class="sw c3" data-zone="scope" data-color="3"></div>
-      <div class="sw c4" data-zone="scope" data-color="4"></div>
-      <div class="sw c5" data-zone="scope" data-color="5"></div>
-      <div class="sw c6" data-zone="scope" data-color="6"></div>
-
-      <div>Customer</div>
-      <div class="sw c1" data-zone="customer" data-color="1"></div>
-      <div class="sw c2" data-zone="customer" data-color="2"></div>
-      <div class="sw c3" data-zone="customer" data-color="3"></div>
-      <div class="sw c4" data-zone="customer" data-color="4"></div>
-      <div class="sw c5" data-zone="customer" data-color="5"></div>
-      <div class="sw c6" data-zone="customer" data-color="6"></div>
-
-      <div>Competition</div>
-      <div class="sw c1" data-zone="competition" data-color="1"></div>
-      <div class="sw c2" data-zone="competition" data-color="2"></div>
-      <div class="sw c3" data-zone="competition" data-color="3"></div>
-      <div class="sw c4" data-zone="competition" data-color="4"></div>
-      <div class="sw c5" data-zone="competition" data-color="5"></div>
-      <div class="sw c6" data-zone="competition" data-color="6"></div>
-
-      <div>Offering</div>
-      <div class="sw c1" data-zone="offering" data-color="1"></div>
-      <div class="sw c2" data-zone="offering" data-color="2"></div>
-      <div class="sw c3" data-zone="offering" data-color="3"></div>
-      <div class="sw c4" data-zone="offering" data-color="4"></div>
-      <div class="sw c5" data-zone="offering" data-color="5"></div>
-      <div class="sw c6" data-zone="offering" data-color="6"></div>
-
-      <div>Organization</div>
-      <div class="sw c1" data-zone="organization" data-color="1"></div>
-      <div class="sw c2" data-zone="organization" data-color="2"></div>
-      <div class="sw c3" data-zone="organization" data-color="3"></div>
-      <div class="sw c4" data-zone="organization" data-color="4"></div>
-      <div class="sw c5" data-zone="organization" data-color="5"></div>
-      <div class="sw c6" data-zone="organization" data-color="6"></div>
-
-      <div>R&amp;D</div>
-      <div class="sw c1" data-zone="rnd" data-color="1"></div>
-      <div class="sw c2" data-zone="rnd" data-color="2"></div>
-      <div class="sw c3" data-zone="rnd" data-color="3"></div>
-      <div class="sw c4" data-zone="rnd" data-color="4"></div>
-      <div class="sw c5" data-zone="rnd" data-color="5"></div>
-      <div class="sw c6" data-zone="rnd" data-color="6"></div>
+      <div><strong>Scope</strong></div><div class="sw c1" data-zone="scope" data-color="1"></div><div class="sw c2" data-zone="scope" data-color="2"></div><div class="sw c3" data-zone="scope" data-color="3"></div><div class="sw c4" data-zone="scope" data-color="4"></div><div class="sw c5" data-zone="scope" data-color="5"></div><div class="sw c6" data-zone="scope" data-color="6"></div>
+      <div><strong>Customer</strong></div><div class="sw c1" data-zone="customer" data-color="1"></div><div class="sw c2" data-zone="customer" data-color="2"></div><div class="sw c3" data-zone="customer" data-color="3"></div><div class="sw c4" data-zone="customer" data-color="4"></div><div class="sw c5" data-zone="customer" data-color="5"></div><div class="sw c6" data-zone="customer" data-color="6"></div>
+      <div><strong>Competition</strong></div><div class="sw c1" data-zone="competition" data-color="1"></div><div class="sw c2" data-zone="competition" data-color="2"></div><div class="sw c3" data-zone="competition" data-color="3"></div><div class="sw c4" data-zone="competition" data-color="4"></div><div class="sw c5" data-zone="competition" data-color="5"></div><div class="sw c6" data-zone="competition" data-color="6"></div>
+      <div><strong>Offering</strong></div><div class="sw c1" data-zone="offering" data-color="1"></div><div class="sw c2" data-zone="offering" data-color="2"></div><div class="sw c3" data-zone="offering" data-color="3"></div><div class="sw c4" data-zone="offering" data-color="4"></div><div class="sw c5" data-zone="offering" data-color="5"></div><div class="sw c6" data-zone="offering" data-color="6"></div>
+      <div><strong>Organization</strong></div><div class="sw c1" data-zone="organization" data-color="1"></div><div class="sw c2" data-zone="organization" data-color="2"></div><div class="sw c3" data-zone="organization" data-color="3"></div><div class="sw c4" data-zone="organization" data-color="4"></div><div class="sw c5" data-zone="organization" data-color="5"></div><div class="sw c6" data-zone="organization" data-color="6"></div>
+      <div><strong>R&amp;D</strong></div><div class="sw c1" data-zone="rnd" data-color="1"></div><div class="sw c2" data-zone="rnd" data-color="2"></div><div class="sw c3" data-zone="rnd" data-color="3"></div><div class="sw c4" data-zone="rnd" data-color="4"></div><div class="sw c5" data-zone="rnd" data-color="5"></div><div class="sw c6" data-zone="rnd" data-color="6"></div>
     </div>
-    <div class="actions">
-      <button id="tid-color-close" class="primary">Close</button>
-    </div>
+    <p class="tid-helper">Updates all existing notes in the block and sets the default for new ones.</p>
+    <div class="actions"><button id="tid-color-close" class="primary">Done</button></div>
   </div>
 </div>
 
 <script>
-  const $ = id => document.getElementById(id);
-  const board = $('tid-board');
-  const printWrap = $('tid-print-wrap');
-  const drawer = $('tid-drawer');
+(function(){
+  const ROOT = document.getElementById('tid-html-canvas');
+  const PDFJS_BASE = (ROOT.getAttribute('data-pdfjs-base') || '').replace(/\/+$/, '');
+  const REST_BASE = ROOT.getAttribute('data-rest-base') || '/wp-json';
+  const REST_ROUTE = ROOT.getAttribute('data-rest-route') || '/tid/v1/parse-pdf';
+  const STORAGE_KEY='tid_canvas_notes_title_only_v6';
+  const ZCOLORS_KEY='tid_zone_colors_v4';
 
-  let notes = [];
-  let seq = 0;
-  let lastPrintOpts = { content: 'detailed', fit: 'multi' };
+  const board=document.getElementById('tid-board');
+  const svg=document.getElementById('tid-lines');
+  const v1=document.getElementById('v1'), v2=document.getElementById('v2'), h1=document.getElementById('h1');
+  const printWrap=document.getElementById('tid-print-wrap');
+  const $=s=>document.querySelector(s);
 
-  const NOTES_KEY = 'tid-canvas-notes';
-  const ZCOLORS_KEY = 'tid-zone-colors';
+  let lastPrintOpts={content:'titles',fit:'fit-one'};
 
-  const zoneDefaults = { scope: 1, customer: 2, competition: 3, offering: 4, organization: 5, rnd: 6 };
+  function layoutGrid(){
+    const r = board.getBoundingClientRect();
+    const w = Math.max(1, Math.round(r.width));
+    const h = Math.max(1, Math.round(r.height));
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    const x1 = Math.round(w/3), x2 = Math.round(2*w/3), y = Math.round(h/2);
+    v1.setAttribute('x1', x1); v1.setAttribute('x2', x1); v1.setAttribute('y1', 0); v1.setAttribute('y2', h);
+    v2.setAttribute('x1', x2); v2.setAttribute('x2', x2); v2.setAttribute('y1', 0); v2.setAttribute('y2', h);
+    h1.setAttribute('x1', 0);  h1.setAttribute('x2', w);  h1.setAttribute('y1', y); h1.setAttribute('y2', y);
+  }
+  window.addEventListener('load', layoutGrid);
+  new ResizeObserver(()=>{ layoutGrid(); autoPackZones(); }).observe(board);
 
-  function save() { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); }
-  function load() { try { return JSON.parse(localStorage.getItem(NOTES_KEY)) || []; } catch { return []; } }
-  function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
-  function getModel(el) { return notes.find(n => n.id === el.dataset.id); }
-  function getZoneEl(zoneId) { return board.querySelector(`.tid-zone[data-zone="${zoneId}"]`); }
+  let zoneDefaults = loadZoneColors() || { scope:1, customer:2, competition:4, offering:3, organization:5, rnd:6 };
 
+  const QUESTIONS={
+    scope:["Industry? Field/niche?","Purpose?","Entity type?","Value chain position?"],
+    customer:["Who buys vs uses?","Perception & access?","Role to customer?","Needs & demand?"],
+    competition:["Competitors?","Differentiation?","Substitutes?","Core competency?"],
+    offering:["What do we offer?","Portfolio & model?","Roadmap?","Revenue/margin mix?"],
+    organization:["Core/support functions?","Team size & reach?","Key roles?","Cost structure?"],
+    rnd:["Innovation approach?","IP & distinctiveness?","Impact KPIs?","Process maturity?","Practices/tools/budget?"]
+  };
+
+  /* Zones */
+  document.querySelectorAll('.tid-zone').forEach(zone=>{
+    const id=zone.dataset.zone, title=zone.dataset.zoneTitle||id;
+    const head=document.createElement('div'); head.className='zone-head';
+    head.innerHTML=`<div class="zone-title">${title}</div>
+                    <span class="zone-count" data-count-for="${id}" title="Jump to note">0</span>
+                    <button class="zone-add" data-zone="${id}">+ Note</button>`;
+    zone.appendChild(head);
+
+    head.querySelector('.zone-add').addEventListener('click', () => {
+      collapseAll();
+      const el = addNote(id, false);
+      focusNote(el);
+      autoPackZone(id, el);
+      el.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+      updateZoneCounts();
+    });
+
+    // Counter dropdown (fixed position, reliable)
+    head.querySelector('.zone-count').addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      showZoneIndex(id, ev.clientX, ev.clientY, title);
+    });
+
+    const q=document.createElement('details'); q.className='zone-questions';
+    q.innerHTML=`<summary>Guiding questions</summary><ul>${(QUESTIONS[id]||[]).map(x=>`<li>${x}</li>`).join('')}</ul>`;
+    zone.appendChild(q);
+  });
+
+  /* Data */
+  let notes=load(); let seq = (notes.reduce((m,n)=>Math.max(m, n.order||0), 0) || 0);
+  notes.forEach(n=>createNote(n));
+  updateZoneCounts(); autoPackZones();
+
+  /* Toolbar */
+  $('#tid-fullscreen').onclick=async ()=>{ try{ await board.requestFullscreen(); }catch(_){} };
+  document.addEventListener('fullscreenchange', ()=>{ document.body.classList.toggle('is-fs', !!document.fullscreenElement); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && document.fullscreenElement){ try{document.exitFullscreen()}catch(_){}} });
+
+  const drawer=$('#tid-drawer');
+  $('#tid-toggle-drawer').onclick=()=>drawer.style.display = drawer.style.display==='flex' ? 'none' : 'flex';
+  $('#tid-close-drawer').onclick=()=>drawer.style.display='none';
+
+  // Colors modal
+  const colorModal = $('#tid-color-modal');
+  $('#tid-open-colors').onclick=()=>{ colorModal.style.display='block'; };
+  $('#tid-color-close').onclick=()=>{ colorModal.style.display='none'; };
+  colorModal.addEventListener('click',(e)=>{ if(e.target===colorModal) colorModal.style.display='none'; });
+  colorModal.querySelectorAll('.sw').forEach(sw=>{
+    sw.addEventListener('click', ()=>{
+      const zone = sw.dataset.zone, c = parseInt(sw.dataset.color,10);
+      zoneDefaults[zone]=c; saveZoneColors(zoneDefaults);
+      board.querySelectorAll(`.tid-zone[data-zone="${zone}"] .tid-note`).forEach(el=>{
+        setNoteColor(el, c);
+        const m=getModel(el); if(m){ m.appliedColor=c; m.color=c; }
+      });
+    });
+  });
+
+  /* Import panel */
+  $('#tid-open-text').onclick=()=>{
+    const wrap=$('#tid-text-area-wrap');
+    wrap.style.display = wrap.style.display==='none' ? 'block' : 'none';
+    if(wrap.style.display==='block') $('#tid-textarea').focus();
+  };
+  $('#tid-text-import').onclick=()=>{
+    const txt=$('#tid-textarea').value||'';
+    if(!txt.trim()){ alert('Please paste the report text first.'); return; }
+    importFromPlainText(txt);
+    $('#tid-textarea').value='';
+    alert('Imported from pasted text.');
+  };
+  $('#tid-open-file').onclick=()=>$('#tid-bda-file').click();
+  $('#tid-bda-file').addEventListener('change', onBdaUpload);
+
+  /* Export & Print */
+  $('#tid-open-print').onclick=()=>openOutputModal();
+  $('#tid-export-pdf').onclick=()=>openOutputModal(/*export*/true);
+  $('#tid-export-json').onclick=()=>doExport('json');
+  $('#tid-export-csv').onclick=()=>doExport('csv');
+  $('#tid-export-txt').onclick=()=>doExport('txt');
+  $('#tid-clear').onclick=()=>{
+    if(confirm('Remove all notes stored in this browser for this page?')){
+      notes=[]; save(); board.querySelectorAll('.tid-note').forEach(n=>n.remove()); updateZoneCounts();
+    }
+  };
+
+  // PDFs
+  $('#tid-add-pdf').onclick=()=>$('#tid-attach-pdfs').click();
+  $('#tid-attach-pdfs').addEventListener('change', e=>{
+    const files=[...e.target.files]; files.forEach(f=>addToDockOnly(f));
+    if(files.length) drawer.style.display='flex'; e.target.value='';
+  });
+
+  /* Global click: collapse & unfocus & close index */
+  document.addEventListener('click', (e)=>{
+    const inside = e.target.closest('.tid-note') || e.target.closest('.tid-drawer') || e.target.closest('.zone-add') || e.target.closest('#tid-print-modal') || e.target.closest('#tid-color-modal') || e.target.closest('.tid-index');
+    if(inside) return;
+    collapseAll(); unfocusAll(); removeIndex();
+  });
+
+  /* Delete */
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest && e.target.closest('.del'); if (!btn) return;
+    const el = btn.closest('.tid-note'); if (!el) return;
+    e.stopPropagation();
+    const id = el.dataset.id;
+    if (!confirm('Delete this note?')) return;
+    el.remove();
+    notes = notes.filter(n => n.id !== id);
+    save(); updateZoneCounts();
+  }, true);
+
+  /* Helpers */
+  function uid(){ return 'n'+Date.now()+Math.random().toString(36).slice(2,7); }
+  function getZoneEl(id){ return board.querySelector(`.tid-zone[data-zone="${id}"]`); }
+  function getModel(el){ return notes.find(n=>n.id===el.dataset.id); }
+  function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)); }
+  function load(){ try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||[]}catch{return[]} }
   function saveZoneColors(v){ localStorage.setItem(ZCOLORS_KEY, JSON.stringify(v)); }
   function loadZoneColors(){ try{return JSON.parse(localStorage.getItem(ZCOLORS_KEY))}catch{return null} }
   function pxToPct(px, total){ return +(px/total*100).toFixed(2); }
@@ -720,160 +819,163 @@
       if(name.endsWith('.json')){
         importCards(JSON.parse(await f.text())); alert('JSON imported.');
       } else if(name.endsWith('.csv')){
-        importCsv(await f.text()); alert('CSV imported.');
+        importCards(parseCSV(await f.text())); alert('CSV imported.');
       } else if(name.endsWith('.pdf')){
-        await parsePdf(f); alert('PDF parsed and imported.');
-      }
-    } catch(err){ alert('Import failed: '+err.message); }
-    e.target.value='';
+        const ok = await ensurePdfJs();
+        if(ok){ await importFromPDF_Client(f); alert('PDF imported via browser.'); }
+        else {
+          const text = await importFromPDF_Server(f);
+          if(text){ importFromPlainText(text); alert('PDF imported via server.'); }
+          else { addToDockOnly(f); alert('Automatic extraction not available. Paste the Bot output in the Import-from-Text box.'); }
+        }
+      } else { alert('Upload PDF, JSON, or CSV from the Dinosaur Business Definition Bot.'); }
+    }catch(err){ console.error(err); alert('Import failed: '+err.message); }
+    finally{ e.target.value=''; }
   }
-
-  function importCards(arr){
-    if(!Array.isArray(arr)) return;
-    arr.forEach(n=>{
-      if(!n.id) n.id=uid();
-      if(!n.zone) n.zone='scope';
-      if(!n.title) n.title='Imported note';
-      if(!n.order) n.order=++seq;
-      if(!n.color) n.color=zoneDefaults[n.zone]||1;
-      if(!n.appliedColor) n.appliedColor=n.color;
-      notes.push(n);
-      createNote(n);
+  function importCards(rows){
+    if(!Array.isArray(rows)) throw new Error('JSON must be an array of objects');
+    const allowed=['scope','customer','competition','offering','organization','rnd'];
+    rows.forEach((r,i)=>{
+      const zone=(r.zone||'offering').toString().toLowerCase();
+      const z=allowed.includes(zone)?zone:'offering';
+      const colorIdx = zoneDefaults[z] || 1;
+      const note={id:uid(),zone:z,title:(r.title||r.name||'Card'),body:(r.body||r.description||r.text||''),comment:(r.comment||r.notes||''),
+                  x:(6+(i*3))%80,y:(16+(i*8))%70,wPct:20,hPct:9,mode:'compact',order:++seq,userMoved:false,color:colorIdx,appliedColor:colorIdx};
+      notes.push(note); createNote(note);
     });
     save(); updateZoneCounts(); autoPackZones();
   }
-
-  function importCsv(text){
-    const lines=text.trim().split('\n'); if(lines.length<2) return;
-    const headers=lines[0].split(',').map(h=>h.replace(/"/g,''));
-    const rows=lines.slice(1).map(line=>{
-      const cells=[]; let inQuote=false,cell='';
-      for(let i=0;i<line.length;i++){
-        const c=line[i];
-        if(c==='"'){ inQuote=!inQuote; } else if(c===','&&!inQuote){ cells.push(cell.replace(/""/g,'"')); cell=''; } else{ cell+=c; }
-      }
-      cells.push(cell.replace(/""/g,'"'));
-      return Object.fromEntries(headers.map((h,i)=>[h,cells[i]||'']));
+  function parseCSV(text){
+    const lines=text.replace(/\r/g,'').split('\n').filter(Boolean);
+    if(!lines.length) return [];
+    const headers=lines[0].split(',').map(h=>h.replace(/^"+|"+$/g,'').trim().toLowerCase());
+    return lines.slice(1).map(row=>{
+      const cells = row.match(/("([^"]|"")*"|[^,]+)/g)||[];
+      const vals = cells.map(c=>c.replace(/^"+|"+$/g,'').replace(/""/g,'"'));
+      const obj={}; headers.forEach((h,i)=>obj[h]=vals[i]); return obj;
     });
-    importCards(rows.map(r=>({
-      id:r.id||uid(), zone:r.zone||'scope', title:r.title||'Imported',
-      body:r.body||'', comment:r.comment||'', x:+r.x||6, y:+r.y||22,
-      wPct:+r.wPct||20, hPct:+r.hPct||9, mode:r.mode||'compact',
-      order:+r.order||++seq, color:+r.color||1, appliedColor:+r.appliedColor||1,
-      userMoved:r.userMoved==='true'
-    })));
   }
-
-  async function parsePdf(file){
-    const fd=new FormData(); fd.append('pdf',file);
-    const resp=await fetch($('tid-html-canvas').dataset.restBase+$('tid-html-canvas').dataset.restRoute,{method:'POST',body:fd});
-    if(!resp.ok) throw new Error('PDF parse failed');
-    const data=await resp.json();
-    if(data.success && data.cards) importCards(data.cards);
-  }
-
-  function importFromText(){
-    const text=$('tid-textarea').value.trim(); if(!text) return;
-    const lines=text.split('\n').filter(l=>l.trim());
-    const cards=lines.map(line=>{
-      const match=line.match(/^\[(\w+)\]\s*(.+?)(?::\s*(.+))?$/);
-      if(match){
-        const [,zone,title,body]=match;
-        return {id:uid(),zone:zone.toLowerCase(),title:title.trim(),body:(body||'').trim(),order:++seq,color:zoneDefaults[zone.toLowerCase()]||1,appliedColor:zoneDefaults[zone.toLowerCase()]||1};
-      }
-      return {id:uid(),zone:'scope',title:line.trim(),body:'',order:++seq,color:1,appliedColor:1};
-    });
-    importCards(cards); $('tid-textarea').value=''; $('tid-text-area-wrap').style.display='none';
-  }
-
-  /* Init */
-  function init(){
-    notes=load(); seq=Math.max(0,...notes.map(n=>n.order||0));
-    notes.forEach(createNote); updateZoneCounts(); autoPackZones();
-
-    // Zone headers
-    ['scope','customer','competition','offering','organization','rnd'].forEach(zoneId=>{
-      const zoneEl=getZoneEl(zoneId), title=zoneEl.dataset.zoneTitle;
-      const head=document.createElement('div'); head.className='zone-head';
-      head.innerHTML=`<div class="zone-title">${title}</div><span class="zone-count" data-count-for="${zoneId}">0</span><button class="zone-add" data-zone="${zoneId}">+ Note</button>`;
-      zoneEl.appendChild(head);
-    });
-    updateZoneCounts();
-
-    // Zone questions
-    const questions={
-      scope:['What is the core problem we are solving?','What is our mission and vision?','What are our key objectives?','What is our target market size?','What are our success metrics?'],
-      customer:['Who are our target customers?','What are their pain points?','How do they currently solve this problem?','What is their buying process?','What do they value most?'],
-      competition:['Who are our direct competitors?','What are their strengths/weaknesses?','How do we differentiate?','What is our competitive advantage?','What threats do we face?'],
-      offering:['What is our core product/service?','What features are essential?','What is our value proposition?','How do we price our offering?','What is our go-to-market strategy?'],
-      organization:['What skills do we need?','What is our organizational structure?','What is our company culture?','What are our core values?','How do we scale our team?'],
-      rnd:['What technology do we need?','What are our R&D priorities?','What innovations are we pursuing?','What is our technical roadmap?','What are our IP considerations?']
-    };
-    Object.entries(questions).forEach(([zoneId,qs])=>{
-      const zoneEl=getZoneEl(zoneId);
-      const details=document.createElement('details'); details.className='zone-questions';
-      details.innerHTML=`<summary>Key Questions</summary><ul>${qs.map(q=>`<li>${q}</li>`).join('')}</ul>`;
-      zoneEl.appendChild(details);
-    });
-
-    // Grid lines
-    function updateLines(){
-      const rect=board.getBoundingClientRect();
-      const svg=$('tid-lines');
-      svg.innerHTML=`
-        <line class="v1" x1="33.33" y1="0" x2="33.33" y2="100"></line>
-        <line class="v2" x1="66.67" y1="0" x2="66.67" y2="100"></line>
-        <line class="h1" x1="0" y1="50" x2="100" y2="50"></line>`;
+  async function importFromPDF_Client(file){
+    const buf = await file.arrayBuffer();
+    const doc = await pdfjsLib.getDocument({ data: buf }).promise;
+    let text=''; 
+    for(let p=1;p<=doc.numPages;p++){
+      const page=await doc.getPage(p);
+      const tc=await page.getTextContent();
+      text += tc.items.map(i=>i.str).join(' ') + '\n';
     }
-    updateLines(); window.addEventListener('resize',updateLines);
-
-    // Events
-    board.addEventListener('click',ev=>{
-      if(ev.target.classList.contains('zone-add')){
-        const zoneId=ev.target.dataset.zone; const el=addNote(zoneId); autoPackZone(zoneId,el);
-        setTimeout(()=>{ el.querySelector('.title').focus(); },0);
-      } else if(ev.target.classList.contains('zone-count')){
-        const zoneId=ev.target.dataset.countFor, title=getZoneEl(zoneId).dataset.zoneTitle;
-        showZoneIndex(zoneId,ev.clientX,ev.clientY,title);
-      } else if(ev.target.classList.contains('del')){
-        const el=ev.target.closest('.tid-note'), m=getModel(el);
-        if(m){ notes.splice(notes.indexOf(m),1); save(); } el.remove(); updateZoneCounts();
-      } else if(!ev.target.closest('.tid-note')){ unfocusAll(); removeIndex(); }
-    });
-
-    $('tid-toggle-drawer').onclick=()=>drawer.style.display=drawer.style.display==='flex'?'none':'flex';
-    $('tid-close-drawer').onclick=()=>drawer.style.display='none';
-    $('tid-fullscreen').onclick=()=>{ document.body.classList.toggle('is-fs'); if(document.body.classList.contains('is-fs')){ $('tid-fullscreen').textContent='Exit Fullscreen'; } else{ $('tid-fullscreen').textContent='Fullscreen Canvas'; } };
-
-    $('tid-open-text').onclick=()=>$('tid-text-area-wrap').style.display=$('tid-text-area-wrap').style.display==='block'?'none':'block';
-    $('tid-open-file').onclick=()=>$('tid-bda-file').click();
-    $('tid-bda-file').onchange=onBdaUpload;
-    $('tid-text-import').onclick=importFromText;
-
-    $('tid-open-print').onclick=openOutputModal;
-    $('tid-export-json').onclick=()=>doExport('json');
-    $('tid-export-csv').onclick=()=>doExport('csv');
-    $('tid-export-txt').onclick=()=>doExport('txt');
-    $('tid-clear').onclick=()=>{ if(confirm('Clear all notes?')){ notes=[]; save(); board.querySelectorAll('.tid-note').forEach(n=>n.remove()); updateZoneCounts(); } };
-
-    $('tid-open-colors').onclick=()=>$('tid-color-modal').style.display='block';
-    $('tid-color-close').onclick=()=>$('tid-color-modal').style.display='none';
-
-    // Zone color picker
-    document.querySelectorAll('#tid-color-modal .sw').forEach(sw=>{
-      sw.onclick=()=>{
-        const zone=sw.dataset.zone, color=+sw.dataset.color;
-        zoneDefaults[zone]=color; saveZoneColors(zoneDefaults);
-        board.querySelectorAll(`.tid-zone[data-zone="${zone}"] .tid-note`).forEach(el=>{
-          const m=getModel(el); if(m&&!m.userMoved){ m.color=color; m.appliedColor=color; save(); setNoteColor(el,color); }
-        });
-      };
-    });
-
-    // Load zone colors
-    const saved=loadZoneColors(); if(saved){ Object.assign(zoneDefaults,saved); }
+    importFromPlainText(text);
   }
+  async function importFromPDF_Server(file){
+    const endpoint = (REST_BASE + REST_ROUTE).replace(/\/+$/, '');
+    try{
+      const fd = new FormData();
+      fd.append('file', file, file.name);
+      const res = await fetch(endpoint, { method:'POST', body: fd });
+      const raw = await res.text(); let data={}; try{ data=JSON.parse(raw); }catch{}
+      if(!res.ok){ throw new Error((data && (data.error||data.message)) || ('HTTP '+res.status)); }
+      if(data && data.text) return data.text;
+      throw new Error('Empty response from parser');
+    }catch(e){ console.warn('Server fallback failed', e); return ''; }
+  }
+  function importFromPlainText(text){
+    const sections = extractSections(text);
+    const mapping = { scope: sections.scope, customer: sections.customer, competition: sections.competition, offering: sections.offering, organization: sections.organization, rnd: sections.rnd };
+    let created=0;
+    Object.entries(mapping).forEach(([zone,txt])=>{
+      if(!txt) return;
+      const bullets = extractBullets(txt);
+      const colorIdx = zoneDefaults[zone] || 1;
+      if(bullets.length){
+        bullets.forEach((b,i)=>{
+          const title = trimWords(b.split(':')[0], 12) || zone[0].toUpperCase()+zone.slice(1);
+          const body  = b;
+          const note={id:uid(),zone,title,body,comment:'',x:(6+(i*3))%80,y:(16+(i*8))%70,wPct:20,hPct:9,mode:'compact',order:++seq,userMoved:false,color:colorIdx,appliedColor:colorIdx};
+          notes.push(note); createNote(note); created++;
+        });
+      } else {
+        const title = zone[0].toUpperCase()+zone.slice(1);
+        const note={id:uid(),zone,title,body:txt.trim(),comment:'',x:6,y:16,wPct:20,hPct:9,mode:'compact',order:++seq,userMoved:false,color:colorIdx,appliedColor:colorIdx};
+        notes.push(note); createNote(note); created++;
+      }
+    });
+    save(); updateZoneCounts(); autoPackZones();
+    alert(created? `Imported ${created} notes.` : 'No importable content found. Try JSON/CSV export from the Bot.');
+  }
+  function extractSections(text){
+    const t=' ' + text.replace(/\u2022/g,'•').replace(/\s+/g,' ').trim() + ' ';
+    function grab(label, nextLabels){
+      const startRe=new RegExp(`\\s(?:\\d+\\.\\s*)?${label}(?:\\sDefinition)?\\s`,'i'); const start=t.search(startRe);
+      if(start<0) return ''; let end=t.length;
+      for(const nl of nextLabels){
+        const re=new RegExp(`\\s(?:\\d+\\.\\s*)?${nl}(?:\\sDefinition)?\\s`,'i'); const idx=t.slice(start+1).search(re);
+        if(idx>=0) end=Math.min(end, start+1+idx);
+      }
+      return t.slice(start, end);
+    }
+    return {
+      scope: grab('Scope',['Customer','Competition','Offering','Organization','Research']),
+      customer: grab('Customer',['Competition','Offering','Organization','Research']),
+      competition: grab('Competition',['Offering','Organization','Research']),
+      offering: grab('Offering',['Organization','Research']),
+      organization: grab('Organization',['Research']),
+      rnd: grab('R\\s*&\\s*D|Research\\s*&\\s*Development|Research\\s*&\\s*Innovation',[])
+    };
+  }
+  function extractBullets(sectionText){
+    if(!sectionText) return [];
+    const s=sectionText.replace(/\s+/g,' ').trim();
+    let parts = s.split(/(?:•|–|-|\so\s)\s+/g).map(x=>x.trim()).filter(Boolean);
+    parts = parts.filter(p=>!/^(\d+\.\s*)?(scope|customer|competition|offering|organization|research|r&d)/i.test(p));
+    const out=[]; for(const p of parts){ if(out.length && p.length<30){ out[out.length-1]+='; '+p; } else out.push(p); }
+    return out;
+  }
+  function trimWords(str, n){ const a=str.trim().split(/\s+/); return a.slice(0,n).join(' ') + (a.length>n?'…':''); }
 
-  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',init); } else{ init(); }
+  /* pdf.js (optional) */
+  async function ensurePdfJs(){
+    if(window.pdfjsLib) return true;
+    const sources = [];
+    if (PDFJS_BASE){
+      sources.push({js:`${PDFJS_BASE}/pdf.min.js`, worker:`${PDFJS_BASE}/pdf.worker.min.js`});
+      sources.push({js:`${PDFJS_BASE}/build/pdf.min.js`, worker:`${PDFJS_BASE}/build/pdf.worker.min.js`});
+    }
+    sources.push(
+      {js:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.js', worker:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.worker.min.js'},
+      {js:'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.min.js', worker:'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.worker.min.js'},
+      {js:'https://unpkg.com/pdfjs-dist@4.6.82/build/pdf.min.js', worker:'https://unpkg.com/pdfjs-dist@4.6.82/build/pdf.worker.min.js'}
+    );
+    for(const src of sources){
+      try{
+        await loadScript(src.js);
+        if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc = src.worker; return true; }
+      }catch(_e){}
+    }
+    return false;
+  }
+  function loadScript(url){ return new Promise((resolve,reject)=>{ const s=document.createElement('script'); s.src=url; s.onload=resolve; s.onerror=()=>reject(new Error('Failed '+url)); document.head.appendChild(s); }); }
+
+  /* Dock PDFs */
+  function addToDockOnly(file){
+    const url=URL.createObjectURL(file);
+    const wrap=document.createElement('div'); wrap.className='panel';
+    wrap.innerHTML=`
+      <header>
+        <div class="name">${file.name}</div>
+        <div class="actions">
+          <button class="doc-fullscreen">Fullscreen</button>
+          <button class="doc-remove">Remove</button>
+        </div>
+      </header>
+      <div class="content"><embed class="tid-pdf" src="${url}" type="application/pdf"></div>`;
+    const body=$('#tid-drawer-docs'); body.appendChild(wrap);
+    const viewer=wrap.querySelector('.tid-pdf');
+    wrap.querySelector('.doc-fullscreen').onclick=()=> {
+      const el = viewer; if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    };
+    wrap.querySelector('.doc-remove').onclick=()=>wrap.remove();
+    const drawer=$('#tid-drawer'); drawer.style.display='flex';
+  }
+})();
 </script>
-
