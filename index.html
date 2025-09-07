@@ -1,0 +1,879 @@
+<div id="tid-html-canvas"
+     data-pdfjs-base="/wp-content/uploads/pdfjs/"
+     data-rest-base="/wp-json"
+     data-rest-route="/tid/v1/parse-pdf"></div>
+
+<style>
+  :root{
+    --tid-brand:#e64a19; --tid-green:#2e7d32; --tid-orange:#f39c12; --tid-blue:#1e3a8a;
+    --tid-text:#1f2937; --tid-muted:#6b7280; --tid-bg:#fff;
+    --note-compact-title:14px; --note-compact-icon:16px; --note-expanded-title:16px; --note-expanded-icon:18px;
+  }
+
+  /* Note theme variables (title/body/comment) — #6 is light blue */
+  .tcolor-1{ --note-bg:#fff8b9; --note-b:#e6d76a; --note-head-top:#fff6cf; --note-head-bot:#fff0a0; --note-comment-bg:#fff9d6; }
+  .tcolor-2{ --note-bg:#e8f5e9; --note-b:#a5d6a7; --note-head-top:#f1fbf2; --note-head-bot:#d8f0db; --note-comment-bg:#eefaf0; }
+  .tcolor-3{ --note-bg:#fff0d6; --note-b:#ffd39b; --note-head-top:#ffe8c2; --note-head-bot:#ffd9a0; --note-comment-bg:#fff3df; }
+  .tcolor-4{ --note-bg:#ffe4e6; --note-b:#fecdd3; --note-head-top:#ffecef; --note-head-bot:#ffd8dd; --note-comment-bg:#fff1f3; }
+  .tcolor-5{ --note-bg:#ede9fe; --note-b:#c4b5fd; --note-head-top:#f1efff; --note-head-bot:#e3dffd; --note-comment-bg:#f3f1ff; }
+  .tcolor-6{ --note-bg:#dbeafe; --note-b:#bfdbfe; --note-head-top:#eaf3ff; --note-head-bot:#d1e7ff; --note-comment-bg:#eef6ff; }
+
+  /* Wider canvas */
+  #tid-html-canvas{max-width:1800px;margin:22px auto;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--tid-text)}
+  .tid-heading{font-weight:900;font-size:clamp(18px,3.4vw,26px);line-height:1.15;letter-spacing:.4px;text-transform:uppercase;color:var(--tid-brand);margin:0 0 12px}
+
+  .tid-toolbar{margin:10px 0 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .tid-toolbar button{
+    cursor:pointer;border:1px solid #cbd5e1;background:#fff;color:var(--tid-text)!important;border-radius:10px;padding:9px 12px;font-size:14px;font-weight:700
+  }
+  .tid-toolbar button:hover{background:#f8fafc}
+  .tid-toolbar .tid-helper{font-size:12px;color:var(--tid-muted)}
+
+  .tid-board{position:relative;width:100%;border:6px solid var(--tid-blue);border-radius:12px;overflow:hidden;background:var(--tid-bg);box-shadow:0 10px 28px rgba(0,0,0,.06)}
+  .tid-board::before{content:"";display:block;padding-top:70%}
+  .is-fs .tid-board{height:100vh}
+  .is-fs .tid-board::before{padding-top:0}
+  .tid-grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,1fr)}
+
+  .tid-lines{position:absolute;inset:0;pointer-events:none}
+  .tid-lines line{stroke-linecap:square}
+  .tid-lines .v1{stroke:var(--tid-brand);stroke-width:6px}
+  .tid-lines .v2{stroke:var(--tid-green);stroke-width:6px}
+  .tid-lines .h1{stroke:var(--tid-orange);stroke-width:6px}
+
+  /* Zones: persistent scroll */
+  .tid-zone{position:relative;padding:8px;overflow:auto}
+  .tid-zone::-webkit-scrollbar{width:10px;height:10px}
+  .tid-zone::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:8px}
+  .zone-head{position:sticky;left:0;top:0;z-index:3;display:inline-flex;gap:8px;align-items:center;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:6px 10px}
+  .zone-title{font-size:13px;font-weight:900;letter-spacing:.2px}
+  .zone-count{font-size:12px;color:#374151;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:999px;padding:1px 7px;cursor:pointer}
+  .zone-add{cursor:pointer;border:1px solid #cbd5e1;background:#fff;color:var(--tid-text)!important;border-radius:8px;font-size:12px;padding:4px 8px;font-weight:700}
+  .zone-add:hover{background:#f3f4f6}
+
+  .zone-questions{position:absolute;right:8px;top:8px;z-index:3;background:#fff;border:1px solid #e5e7eb;border-radius:10px;max-width:min(92%,380px)}
+  .zone-questions summary{cursor:pointer;padding:6px 10px;font-size:12px;color:var(--tid-muted)}
+  .zone-questions ul{margin:0;padding:0 14px 10px 22px;font-size:12px;line-height:1.35;max-height:200px;overflow:auto}
+
+  /* Notes */
+  .tid-note{position:absolute;background:var(--note-bg);border:1px solid var(--note-b);border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,.12);display:flex;flex-direction:column;overflow:hidden}
+  .tid-note.compact{min-width:200px;min-height:52px;width:200px;height:60px;resize:both;overflow:hidden}
+  .tid-note.expanded{min-width:240px;min-height:150px;width:370px;height:270px;resize:both;overflow:auto}
+
+  .tid-note-header{display:flex;gap:8px;align-items:center;padding:6px 10px;background:linear-gradient(var(--note-head-top),var(--note-head-bot));border-bottom:1px solid var(--note-b);user-select:none;position:sticky;top:0;z-index:2}
+  .tid-note .drag{font-weight:900;opacity:.8;cursor:grab}
+  .tid-note .drag:active{cursor:grabbing}
+  .tid-note.compact .drag{font-size:var(--note-compact-icon)}
+  .tid-note.expanded .drag{font-size:var(--note-expanded-icon)}
+  .tid-note .title{flex:1;outline:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tid-note.compact .title{font-weight:800;font-size:var(--note-compact-title)}
+  .tid-note.expanded .title{font-weight:900;font-size:var(--note-expanded-title)}
+  .tid-note .del{border:none;background:transparent;line-height:1;cursor:pointer;opacity:.9;color:#7c3e00;font-weight:900}
+  .tid-note.compact .del{font-size:var(--note-compact-icon)}
+  .tid-note.expanded .del{font-size:var(--note-expanded-icon)}
+  .tid-note .del:hover{opacity:1}
+
+  .color-dot{width:14px;height:14px;border-radius:999px;border:1px solid #a3a3a3;cursor:pointer}
+  .tcolor-1 .color-dot{background:#fff8b9}
+  .tcolor-2 .color-dot{background:#e8f5e9}
+  .tcolor-3 .color-dot{background:#fff0d6}
+  .tcolor-4 .color-dot{background:#ffe4e6}
+  .tcolor-5 .color-dot{background:#ede9fe}
+  .tcolor-6 .color-dot{background:#dbeafe}
+
+  .tid-note-body{padding:10px;outline:none;font-size:14px;flex:1;display:none;background:var(--note-bg)}
+  .tid-note.expanded .tid-note-body{display:block}
+  .tid-note details{border-top:1px dashed var(--note-b);background:var(--note-comment-bg);display:none}
+  .tid-note.expanded details{display:block}
+  .tid-note summary{cursor:pointer;padding:6px 10px;font-size:12px;color:#384151}
+  .tid-note textarea{width:100%;min-height:80px;border:none;outline:none;padding:8px;font-size:13px;background:#fffdf0;resize:vertical}
+
+  /* Focus/dim */
+  .focus-mode .tid-note:not(.is-active){opacity:.35; filter:saturate(.7)}
+
+  .tid-footer{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--tid-muted);margin-top:8px}
+  .tid-mini-logo{font-weight:900;color:var(--tid-blue);letter-spacing:.3px}
+
+  /* Document Dock */
+  .tid-drawer{position:fixed;top:0;right:0;width:min(520px,92vw);height:100vh;background:#fff;box-shadow:-18px 0 28px rgba(0,0,0,.2);border-left:4px solid var(--tid-blue);z-index:99999;display:none;flex-direction:column}
+  .tid-drawer header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid #e5e7eb}
+  .tid-drawer header h3{margin:0;font-size:16px;font-weight:900}
+  .tid-drawer .body{padding:10px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+  .tid-drawer .panel{border:1px solid #e5e7eb;border-radius:10px;overflow:hidden}
+  .tid-drawer .panel>header{display:flex;align-items:center;justify-content:space-between;background:#f8fafc;padding:8px 10px;border-bottom:1px solid #e5e7eb}
+  .tid-drawer .panel>header .name{font-weight:800;font-size:13px}
+  .tid-drawer .panel .actions button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:700;color:var(--tid-text)!important}
+  .tid-drawer .panel .actions button:hover{background:#f3f4f6}
+  .tid-drawer .panel .content{padding:8px}
+  #tid-drawer-docs{max-height:60vh;overflow:auto}
+  .tid-pdf{width:100%;height:420px;border:0;display:block}
+
+  /* Zone index (number badge click) */
+  .tid-index{position:fixed;z-index:999999;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,.2);max-width:340px;max-height:300px;overflow:auto}
+  .tid-index h5{margin:8px 10px;font-size:12px;color:#6b7280}
+  .tid-index button{display:block;width:100%;text-align:left;padding:8px 10px;border:0;background:#fff;cursor:pointer;font-size:13px}
+  .tid-index button:hover{background:#f3f4f6}
+
+  /* PRINT: multipage with full canvas per page (no blank first page) */
+  .tid-print-wrap{display:none}
+  @media print{
+    @page { size: A4 landscape; margin: 6mm; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .tid-heading, .tid-toolbar, .tid-footer, .tid-drawer, .tid-board, #tid-print-modal, #tid-color-modal { display:none!important; }
+
+    .tid-print-wrap{display:block!important;margin:0}
+
+    .tid-page{
+      border:6px solid var(--tid-blue);
+      border-radius:12px;
+      padding:0;
+      break-after:page; /* no blank first page */
+      page-break-after:always;
+      margin:0 0 6mm 0;
+    }
+    .tid-page:last-child{page-break-after:auto; break-after:auto}
+
+    .pwrap{display:grid; grid-template-columns:repeat(3,1fr); grid-auto-rows:auto; gap:0;}
+    .pzone{padding:6px; min-height:90px; display:grid; grid-auto-flow:row;
+      grid-template-columns:repeat(auto-fill, minmax(130px,1fr)); gap:6px; page-break-inside:avoid}
+    .pzone h4{margin:0 0 4px;font-size:11px;font-weight:900}
+    .pnote{border:1px solid #e6d76a;border-radius:10px;padding:6px;page-break-inside:avoid;background:#fff8b9}
+    .pnote .ptitle{font-weight:900; font-size:11px; margin-bottom:3px}
+    .pnote .pbody{font-size:10px; line-height:1.25; max-height:80mm; overflow:hidden}
+
+    .row1{border-bottom:6px solid var(--tid-orange)}
+    .col1{border-right:6px solid var(--tid-brand)}
+    .col2{border-right:6px solid var(--tid-green)}
+
+    /* Fit-all-on-one-page mode */
+    .fit-one .pzone{grid-template-columns:repeat(auto-fill, minmax(100px,1fr))}
+    .fit-one .pnote{padding:5px}
+    .fit-one .pnote .ptitle{font-size:10px}
+    .fit-one .pnote .pbody{font-size:9px}
+
+    /* Title-only mode */
+    .titles-only .pnote .pbody{display:none}
+
+    #tid-print-footer{position:fixed;bottom:3mm;right:6mm;font-size:10px;color:#374151}
+    #tid-print-footer::after{content:"Page " counter(page) " of " counter(pages);}
+  }
+
+  /* Modals */
+  #tid-print-modal,#tid-color-modal{display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:999998}
+  #tid-print-modal .card, #tid-color-modal .card{max-width:680px; margin:6vh auto; background:#fff; border-radius:12px; padding:14px; box-shadow:0 10px 28px rgba(0,0,0,.2)}
+  #tid-print-modal h3,#tid-color-modal h3{margin:0 0 8px; font-size:18px; font-weight:900}
+  #tid-print-modal fieldset{border:1px solid #e5e7eb; border-radius:10px; padding:10px; margin:8px 0}
+  #tid-print-modal legend{padding:0 6px; font-weight:800; color:#374151}
+  #tid-print-modal .row{display:flex; gap:14px; align-items:center; flex-wrap:wrap}
+  #tid-print-modal .actions, #tid-color-modal .actions{display:flex; gap:8px; justify-content:flex-end; margin-top:10px}
+  #tid-print-modal button, #tid-color-modal button{cursor:pointer;border:1px solid #cbd5e1;background:#fff;color:var(--tid-text)!important;border-radius:10px;padding:8px 12px;font-weight:700}
+  #tid-print-modal button.primary,#tid-color-modal button.primary{background:#111827;color:#fff!important;border-color:#111827}
+
+  .color-grid{display:grid; grid-template-columns: 1fr repeat(6, 40px); gap:10px; align-items:center}
+  .sw{width:34px;height:24px;border-radius:8px;border:1px solid #cbd5e1;cursor:pointer}
+  .sw.c1{background:#fff8b9}.sw.c2{background:#e8f5e9}.sw.c3{background:#fff0d6}.sw.c4{background:#ffe4e6}.sw.c5{background:#ede9fe}.sw.c6{background:#dbeafe}
+</style>
+<style>
+/* FIX: Zone jump dropdown text invisible until hover */
+.tid-index { font-family: inherit; }
+.tid-index h5 { color: #6b7280 !important; }
+
+.tid-index button,
+.tid-index a {
+  display: block !important;
+  width: 100% !important;
+  text-align: left !important;
+  padding: 8px 10px !important;
+  border: 0 !important;
+  background: #fff !important;
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+}
+
+.tid-index button:hover,
+.tid-index a:hover {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+}
+</style>
+
+<div class="tid-heading">Enterprise Pre-Business<br>Definition Audit Canvas</div>
+
+<div class="tid-toolbar">
+  <button id="tid-toggle-drawer">Document Dock</button>
+  <button id="tid-fullscreen">Fullscreen Canvas</button>
+  <button id="tid-open-colors">Note Colors</button>
+  <span class="tid-helper">Double-click a note to expand. Click outside to collapse. Drag by "⋮⋮".</span>
+</div>
+
+<div class="tid-board" id="tid-board">
+  <svg class="tid-lines" id="tid-lines" width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <line class="v1" id="v1" x1="0" y1="0" x2="0" y2="0"></line>
+    <line class="v2" id="v2" x1="0" y1="0" x2="0" y2="0"></line>
+    <line class="h1" id="h1" x1="0" y1="0" x2="0" y2="0"></line>
+  </svg>
+  <div class="tid-grid">
+    <section class="tid-zone" data-zone="scope" data-zone-title="Scope"></section>
+    <section class="tid-zone" data-zone="customer" data-zone-title="Customer"></section>
+    <section class="tid-zone" data-zone="competition" data-zone-title="Competition"></section>
+    <section class="tid-zone" data-zone="offering" data-zone-title="Offering"></section>
+    <section class="tid-zone" data-zone="organization" data-zone-title="Organization"></section>
+    <section class="tid-zone" data-zone="rnd" data-zone-title="R&amp;D"></section>
+  </div>
+</div>
+
+<!-- PRINT SHEET: multiple pages container -->
+<div class="tid-print-wrap" id="tid-print-wrap" aria-hidden="true"></div>
+<div id="tid-print-footer" aria-hidden="true"></div>
+
+<div class="tid-footer">
+  <div class="tid-mini-logo">TID • The Innovative Dinosaur</div>
+  <div>CC BY-NC-SA 4.0 • Designed by: Motaz Agamawi</div>
+</div>
+
+<!-- Document Dock -->
+<aside class="tid-drawer" id="tid-drawer">
+  <header>
+    <h3>Document Dock</h3>
+    <div><button id="tid-close-drawer">Close</button></div>
+  </header>
+  <div class="body">
+    <!-- Import -->
+    <section class="panel" id="tid-import-panel">
+      <header>
+        <div class="name">Import Business Definition</div>
+        <div class="actions">
+          <button id="tid-open-text">Import from Text</button>
+          <button id="tid-open-file">Upload PDF/JSON/CSV</button>
+        </div>
+      </header>
+      <div class="content">
+        <p class="tid-helper" style="margin:0 0 8px">Use the <strong>Dinosaur Business Definition Bot</strong> to generate a report. Paste the text or upload the file.</p>
+        <input id="tid-bda-file" type="file" accept=".pdf,.json,.csv" style="display:none">
+        <div id="tid-text-area-wrap" style="display:none">
+          <textarea id="tid-textarea" placeholder="Paste report text here…" style="width:100%; height:160px; border:1px solid #e5e7eb; border-radius:10px; padding:10px; font-family:ui-monospace, Menlo, Consolas, monospace; font-size:13px;"></textarea>
+          <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px">
+            <button id="tid-text-import">Import</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Export & Print -->
+    <section class="panel" id="tid-export-panel">
+      <header>
+        <div class="name">Export &amp; Print</div>
+        <div class="actions">
+          <button id="tid-open-print">Print</button>
+          <button id="tid-export-pdf">Export PDF</button>
+          <button id="tid-export-json">JSON</button>
+          <button id="tid-export-csv">CSV</button>
+          <button id="tid-export-txt">TXT</button>
+          <button id="tid-clear">Clear All</button>
+        </div>
+      </header>
+      <div class="content">
+        <p class="tid-helper" style="margin:0">Exports use the same options as Print (Titles/Detailed &amp; Fit one page/Multi-page) and keep your note order.</p>
+      </div>
+    </section>
+
+    <!-- PDFs -->
+    <section class="panel">
+      <header>
+        <div class="name">Attached Documents</div>
+        <div class="actions"><button id="tid-add-pdf">+ Add PDF</button></div>
+      </header>
+      <div class="content" id="tid-drawer-docs">
+        <p class="tid-helper" style="margin:0">No documents attached yet.</p>
+      </div>
+    </section>
+  </div>
+</aside>
+
+<!-- Print Modal -->
+<div id="tid-print-modal">
+  <div class="card">
+    <h3>Print Options</h3>
+    <fieldset>
+      <legend>Content</legend>
+      <div class="row">
+        <label><input type="radio" name="printContent" value="detailed" checked> Detailed (titles + body)</label>
+        <label><input type="radio" name="printContent" value="titles"> Titles only</label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Layout</legend>
+      <div class="row">
+        <label><input type="radio" name="printFit" value="multi" checked> Multi-page</label>
+        <label><input type="radio" name="printFit" value="fit-one"> Fit all on one page</label>
+      </div>
+    </fieldset>
+    <div class="actions">
+      <button id="tid-print-cancel">Cancel</button>
+      <button id="tid-print-go" class="primary">Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- Color Modal -->
+<div id="tid-color-modal">
+  <div class="card">
+    <h3>Zone Default Colors</h3>
+    <div class="color-grid">
+      <div>Scope</div>
+      <div class="sw c1" data-zone="scope" data-color="1"></div>
+      <div class="sw c2" data-zone="scope" data-color="2"></div>
+      <div class="sw c3" data-zone="scope" data-color="3"></div>
+      <div class="sw c4" data-zone="scope" data-color="4"></div>
+      <div class="sw c5" data-zone="scope" data-color="5"></div>
+      <div class="sw c6" data-zone="scope" data-color="6"></div>
+
+      <div>Customer</div>
+      <div class="sw c1" data-zone="customer" data-color="1"></div>
+      <div class="sw c2" data-zone="customer" data-color="2"></div>
+      <div class="sw c3" data-zone="customer" data-color="3"></div>
+      <div class="sw c4" data-zone="customer" data-color="4"></div>
+      <div class="sw c5" data-zone="customer" data-color="5"></div>
+      <div class="sw c6" data-zone="customer" data-color="6"></div>
+
+      <div>Competition</div>
+      <div class="sw c1" data-zone="competition" data-color="1"></div>
+      <div class="sw c2" data-zone="competition" data-color="2"></div>
+      <div class="sw c3" data-zone="competition" data-color="3"></div>
+      <div class="sw c4" data-zone="competition" data-color="4"></div>
+      <div class="sw c5" data-zone="competition" data-color="5"></div>
+      <div class="sw c6" data-zone="competition" data-color="6"></div>
+
+      <div>Offering</div>
+      <div class="sw c1" data-zone="offering" data-color="1"></div>
+      <div class="sw c2" data-zone="offering" data-color="2"></div>
+      <div class="sw c3" data-zone="offering" data-color="3"></div>
+      <div class="sw c4" data-zone="offering" data-color="4"></div>
+      <div class="sw c5" data-zone="offering" data-color="5"></div>
+      <div class="sw c6" data-zone="offering" data-color="6"></div>
+
+      <div>Organization</div>
+      <div class="sw c1" data-zone="organization" data-color="1"></div>
+      <div class="sw c2" data-zone="organization" data-color="2"></div>
+      <div class="sw c3" data-zone="organization" data-color="3"></div>
+      <div class="sw c4" data-zone="organization" data-color="4"></div>
+      <div class="sw c5" data-zone="organization" data-color="5"></div>
+      <div class="sw c6" data-zone="organization" data-color="6"></div>
+
+      <div>R&amp;D</div>
+      <div class="sw c1" data-zone="rnd" data-color="1"></div>
+      <div class="sw c2" data-zone="rnd" data-color="2"></div>
+      <div class="sw c3" data-zone="rnd" data-color="3"></div>
+      <div class="sw c4" data-zone="rnd" data-color="4"></div>
+      <div class="sw c5" data-zone="rnd" data-color="5"></div>
+      <div class="sw c6" data-zone="rnd" data-color="6"></div>
+    </div>
+    <div class="actions">
+      <button id="tid-color-close" class="primary">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const board = $('tid-board');
+  const printWrap = $('tid-print-wrap');
+  const drawer = $('tid-drawer');
+
+  let notes = [];
+  let seq = 0;
+  let lastPrintOpts = { content: 'detailed', fit: 'multi' };
+
+  const NOTES_KEY = 'tid-canvas-notes';
+  const ZCOLORS_KEY = 'tid-zone-colors';
+
+  const zoneDefaults = { scope: 1, customer: 2, competition: 3, offering: 4, organization: 5, rnd: 6 };
+
+  function save() { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); }
+  function load() { try { return JSON.parse(localStorage.getItem(NOTES_KEY)) || []; } catch { return []; } }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
+  function getModel(el) { return notes.find(n => n.id === el.dataset.id); }
+  function getZoneEl(zoneId) { return board.querySelector(`.tid-zone[data-zone="${zoneId}"]`); }
+
+  function saveZoneColors(v){ localStorage.setItem(ZCOLORS_KEY, JSON.stringify(v)); }
+  function loadZoneColors(){ try{return JSON.parse(localStorage.getItem(ZCOLORS_KEY))}catch{return null} }
+  function pxToPct(px, total){ return +(px/total*100).toFixed(2); }
+
+  function setNoteColor(el, idx){
+    el.classList.remove('tcolor-1','tcolor-2','tcolor-3','tcolor-4','tcolor-5','tcolor-6');
+    el.classList.add('tcolor-'+idx);
+  }
+
+  function addNote(zoneId, expanded=false){
+    const orderVal = ++seq;
+    const colorIdx = zoneDefaults[zoneId] || 1;
+    const note={id:uid(),zone:zoneId,title:'New note',body:'',comment:'',
+                x:6,y:22,wPct:20,hPct:9,mode: expanded?'expanded':'compact',
+                order: orderVal, userMoved:false, color:colorIdx, appliedColor:colorIdx};
+    notes.push(note);
+    return createNote(note);
+  }
+
+  function focusNote(el){
+    board.classList.add('focus-mode');
+    board.querySelectorAll('.tid-note').forEach(n=>n.classList.remove('is-active'));
+    el.classList.add('is-active');
+    el.style.zIndex = String(Date.now()%100000);
+  }
+  function unfocusAll(){ board.classList.remove('focus-mode'); board.querySelectorAll('.tid-note').forEach(n=>n.classList.remove('is-active')); }
+
+  function createNote(model){
+    const zoneEl=getZoneEl(model.zone);
+    const el=document.createElement('div'); el.className='tid-note tcolor-'+(model.appliedColor||zoneDefaults[model.zone]||1); el.dataset.id=model.id;
+    el.innerHTML=`
+      <div class="tid-note-header">
+        <span class="drag" title="Drag">⋮⋮</span>
+        <div class="title" spellcheck="false"></div>
+        <span class="color-dot" title="Change color"></span>
+        <button class="del" title="Delete" type="button" aria-label="Delete">×</button>
+      </div>
+      <div class="tid-note-body" contenteditable="true" spellcheck="true"></div>
+      <details><summary>Comment</summary><textarea placeholder="Add an optional comment…"></textarea></details>`;
+    zoneEl.appendChild(el);
+
+    el.classList.toggle('compact', (model.mode||'compact')==='compact');
+    el.classList.toggle('expanded', (model.mode||'compact')==='expanded');
+
+    el.querySelector('.title').textContent=model.title||'';
+    el.querySelector('.tid-note-body').textContent=model.body||'';
+    el.querySelector('textarea').value=model.comment||'';
+
+    requestAnimationFrame(()=>{
+      const z=zoneEl.getBoundingClientRect();
+      const wPct = model.wPct ?? 20, hPct = model.hPct ?? 9;
+      el.style.left   = ((model.x ?? 6)   / 100) * z.width  + 'px';
+      el.style.top    = ((model.y ?? 16)  / 100) * z.height + 'px';
+      el.style.width  = (wPct/100) * z.width  + 'px';
+      el.style.height = (hPct/100) * z.height + 'px';
+      clamp(el);
+    });
+
+    el.addEventListener('dblclick', ()=>{ (el.classList.contains('expanded')?collapse:expand)(el); });
+
+    const titleEl = el.querySelector('.title');
+    function setTitleEditable(){ if(el.classList.contains('expanded')) titleEl.setAttribute('contenteditable','plaintext-only'); else titleEl.removeAttribute('contenteditable'); }
+    setTitleEditable();
+    titleEl.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter'||ev.key==='Tab'){ ev.preventDefault(); el.querySelector('.tid-note-body').focus(); } if(ev.key==='Escape'){ collapse(el); } });
+    el.querySelector('.tid-note-body').addEventListener('input', ()=>{ getModel(el).body=el.querySelector('.tid-note-body').textContent; save(); });
+    el.querySelector('textarea').addEventListener('input', ()=>{ getModel(el).comment=el.querySelector('textarea').value; save(); });
+    titleEl.addEventListener('input', ()=>{ getModel(el).title=titleEl.textContent.trim(); save(); });
+
+    el.querySelector('.color-dot').addEventListener('click', ()=>{
+      const m=getModel(el); const cur = m.appliedColor || zoneDefaults[m.zone] || 1;
+      const next = cur % 6 + 1; m.color=next; m.appliedColor=next; save(); setNoteColor(el, next);
+    });
+
+    // drag
+    const handle=el.querySelector('.tid-note-header .drag');
+    let dragging=false,startX=0,startY=0,baseL=0,baseT=0;
+    handle.addEventListener('pointerdown', ev=>{
+      dragging=true; ev.preventDefault(); handle.setPointerCapture(ev.pointerId);
+      const r=el.getBoundingClientRect(), z=zoneEl.getBoundingClientRect();
+      startX=ev.clientX; startY=ev.clientY; baseL=r.left-z.left; baseT=r.top-z.top;
+      focusNote(el);
+      const m=getModel(el); m.order=++seq; m.userMoved=true; save();
+    });
+    handle.addEventListener('pointermove', ev=>{
+      if(!dragging) return;
+      const z=zoneEl.getBoundingClientRect(); const r=el.getBoundingClientRect();
+      let nl=baseL+(ev.clientX-startX), nt=baseT+(ev.clientY-startY);
+      nl=Math.max(0,Math.min(nl,z.width-r.width)); nt=Math.max(0,Math.min(nt,z.height-r.height));
+      el.style.left=nl+'px'; el.style.top=nt+'px';
+    });
+    handle.addEventListener('pointerup', ()=>{
+      if(!dragging) return; dragging=false;
+      const z=zoneEl.getBoundingClientRect(), r=el.getBoundingClientRect();
+      const left=r.left-z.left, top=r.top-z.top, m=getModel(el);
+      m.x=pxToPct(left,z.width); m.y=pxToPct(top,z.height); save();
+    });
+
+    // persist resize
+    const ro=new ResizeObserver(()=>{
+      const z=zoneEl.getBoundingClientRect(), r=el.getBoundingClientRect(), m=getModel(el);
+      let w=r.width, h=r.height, l=r.left-z.left, t=r.top-z.top;
+      if (w > z.width - l)  w = Math.max(200, z.width - l - 2);
+      if (h > z.height - t) h = Math.max(52,  z.height - t - 2);
+      el.style.width=w+'px'; el.style.height=h+'px';
+      const r2=el.getBoundingClientRect();
+      m.wPct=pxToPct(r2.width,z.width); m.hPct=pxToPct(r2.height,z.height); save();
+    }); ro.observe(el);
+
+    return el;
+    function expand(elm){ elm.classList.remove('compact'); elm.classList.add('expanded'); const m=getModel(elm); m.mode='expanded'; save(); setTitleEditable(); setTimeout(()=>{ (elm.querySelector('.tid-note-body').textContent.trim()? elm.querySelector('.tid-note-body') : titleEl).focus(); },0); }
+    function collapse(elm){ elm.classList.remove('expanded'); elm.classList.add('compact'); const m=getModel(elm); m.mode='compact'; save(); setTitleEditable(); }
+  }
+
+  function updateZoneCounts(){
+    ['scope','customer','competition','offering','organization','rnd'].forEach(z=>{
+      const c=notes.filter(n=>n.zone===z).length;
+      const badge=document.querySelector(`.zone-count[data-count-for="${z}"]`);
+      if(badge) badge.textContent=c;
+    });
+  }
+
+  function collapseAll(){
+    board.querySelectorAll('.tid-note.expanded').forEach(n=>{ n.classList.remove('expanded'); n.classList.add('compact'); const m=getModel(n); if(m){ m.mode='compact'; } });
+    save();
+  }
+  function clamp(el){
+    const z=el.parentElement.getBoundingClientRect(), r=el.getBoundingClientRect();
+    let l=r.left-z.left, t=r.top-z.top;
+    if (l < 0) l = 0;
+    if (t < 0) t = 0;
+    if (l + r.width > z.width)  l = Math.max(0, z.width - r.width);
+    if (t + r.height > z.height) t = Math.max(0, z.height - r.height);
+    el.style.left=l+'px'; el.style.top=t+'px';
+  }
+
+  /* Auto-pack compact notes; target ≥2 columns when possible */
+  function autoPackZones(){ ['scope','customer','competition','offering','organization','rnd'].forEach(id=>autoPackZone(id)); }
+  function autoPackZone(zoneId, onlyEl=null){
+    const zoneEl = getZoneEl(zoneId); if(!zoneEl) return;
+    const all = [...zoneEl.querySelectorAll('.tid-note')];
+    const candidates = all.filter(el=>{
+      const m=getModel(el); if(!m) return false;
+      if(el.classList.contains('expanded')) return false;
+      if(m.userMoved) return false;
+      if(onlyEl) return el===onlyEl;
+      return true;
+    }).sort((a,b)=> (getModel(a).order||0) - (getModel(b).order||0));
+    if(!candidates.length) return;
+
+    const zrect = zoneEl.getBoundingClientRect();
+    const headH = 56, pad = 8, gap = 8;
+    const usableW = zrect.width - pad*2;
+    const usableH = zrect.height - headH - pad;
+
+    const minW = 200, cardH = 60;
+    let cols = Math.floor((usableW + gap) / (minW + gap));
+    if (cols < 2 && usableW >= (minW*2 + gap)) cols = 2; // try to force 2 if space permits
+    cols = Math.max(1, cols);
+    const width = Math.max(minW, Math.floor((usableW - (cols-1)*gap) / cols));
+    const rows = Math.max(1, Math.floor((usableH + gap) / (cardH + gap)));
+
+    const occ = Array.from({length: rows}, ()=>Array(cols).fill(false));
+    all.filter(el=>!candidates.includes(el)).forEach(el=>{
+      const m=getModel(el); if(!m) return;
+      const col = Math.min(cols-1, Math.max(0, Math.floor((m.x/100 * zrect.width) / (width+gap))));
+      const row = Math.min(rows-1, Math.max(0, Math.floor(((m.y/100 * zrect.height) - headH) / (cardH+gap))));
+      if(row>=0 && col>=0) occ[row][col]=true;
+    });
+
+    function firstEmpty(){ for(let r=0;r<rows;r++){ for(let c=0;c<cols;c++){ if(!occ[r][c]) return [r,c]; } } return [rows-1, cols-1]; }
+
+    candidates.forEach(el=>{
+      const [r,c] = firstEmpty(); occ[r][c]=true;
+      const x = pad + c*(width+gap);
+      const y = headH + pad + r*(cardH+gap);
+      el.style.width = width + 'px';
+      el.style.height = cardH + 'px';
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      const z = zoneEl.getBoundingClientRect();
+      const m = getModel(el);
+      m.x = pxToPct(x, z.width); m.y = pxToPct(y, z.height);
+      m.wPct = pxToPct(width, z.width); m.hPct = pxToPct(cardH, z.height);
+    });
+    save();
+  }
+
+  /* Zone index dropdown */
+  function showZoneIndex(zoneId, cx, cy, title){
+    removeIndex();
+    const menu=document.createElement('div'); menu.className='tid-index'; menu.id='tid-index';
+    const items = notes.filter(n=>n.zone===zoneId).sort((a,b)=>(a.order||0)-(b.order||0));
+    menu.innerHTML = `<h5>${title} — notes</h5>` + (items.length
+      ? items.map(n=>`<button data-id="${n.id}" title="${escapeHtml(n.title||'Note')}">${escapeHtml(n.title||'Note')}</button>`).join('')
+      : `<div style="padding:8px 10px;color:#6b7280;font-size:13px">No notes yet</div>`);
+    document.body.appendChild(menu);
+    const left = Math.min(window.innerWidth - menu.getBoundingClientRect().width - 12, cx + 6);
+    const top  = Math.min(window.innerHeight - menu.getBoundingClientRect().height - 12, cy + 10);
+    menu.style.left = Math.max(8,left)+'px';
+    menu.style.top  = Math.max(8,top)+'px';
+    menu.addEventListener('click', (ev)=>{
+      const b = ev.target.closest('button'); if(!b) return;
+      const id = b.getAttribute('data-id'); removeIndex(); jumpToNote(id);
+    });
+    window.addEventListener('scroll', removeIndex, {once:true});
+  }
+  function removeIndex(){ const m=document.getElementById('tid-index'); if(m) m.remove(); }
+  function jumpToNote(id){
+    const el = board.querySelector(`.tid-note[data-id="${CSS.escape(id)}"]`); if(!el) return;
+    el.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+    setTimeout(()=>{ if(el.classList.contains('compact')){ el.classList.remove('compact'); el.classList.add('expanded'); const m=getModel(el); if(m){ m.mode='expanded'; save(); } } focusNote(el); const body = el.querySelector('.tid-note-body'); (body.textContent.trim()? body : el.querySelector('.title')).focus(); }, 220);
+  }
+  function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+
+  /* Print/Export: full-canvas on every page */
+  function openOutputModal(){
+    const modal=$('#tid-print-modal');
+    modal.style.display='block';
+    $('#tid-print-cancel').onclick=()=>modal.style.display='none';
+    $('#tid-print-go').onclick=()=>{
+      lastPrintOpts = {
+        content: document.querySelector('input[name="printContent"]:checked').value,
+        fit: document.querySelector('input[name="printFit"]:checked').value
+      };
+      modal.style.display='none';
+      buildPrintPages(lastPrintOpts);
+      setTimeout(()=>{ window.print(); }, 40);
+    };
+  }
+
+  // Build multiple .tid-page so each page shows full canvas (frame + 6 zones)
+  function buildPrintPages(opts){
+    printWrap.innerHTML='';
+    const classNames = [(opts.content==='titles'?'titles-only':''),(opts.fit==='fit-one'?'fit-one':'')].filter(Boolean).join(' ');
+
+    // Gather notes per zone
+    const ZS=['scope','customer','competition','offering','organization','rnd'];
+    const byZone = Object.fromEntries(ZS.map(z=>[z, notes.filter(n=>n.zone===z).sort((a,b)=>(a.order||0)-(b.order||0))]));
+
+    if(opts.fit==='fit-one'){
+      // Single page scaled layout
+      const page = makePage(classNames);
+      ZS.forEach((z,idx)=> injectNotesInto(page, z, byZone[z], opts));
+      printWrap.appendChild(page);
+      return;
+    }
+
+    // Multipage: chunk per zone using conservative capacities
+    const cap = (opts.content==='titles') ? 24 : 12; // per zone, per page
+    const pagesNeeded = Math.max(...ZS.map(z=>Math.ceil(byZone[z].length / cap))) || 1;
+
+    for(let i=0;i<pagesNeeded;i++){
+      const page = makePage(classNames);
+      ZS.forEach((z)=> {
+        const slice = byZone[z].slice(i*cap,(i+1)*cap);
+        injectNotesInto(page, z, slice, opts);
+      });
+      printWrap.appendChild(page);
+    }
+  }
+
+  function makePage(cls){
+    const page=document.createElement('section'); page.className='tid-page '+(cls||'');
+    const wrap=document.createElement('div'); wrap.className='pwrap';
+    wrap.innerHTML = `
+      <section class="pzone row1 col1" data-zone="scope"><h4>Scope</h4></section>
+      <section class="pzone row1 col2" data-zone="customer"><h4>Customer</h4></section>
+      <section class="pzone row1 col3" data-zone="competition"><h4>Competition</h4></section>
+      <section class="pzone row2 col1" data-zone="offering"><h4>Offering</h4></section>
+      <section class="pzone row2 col2" data-zone="organization"><h4>Organization</h4></section>
+      <section class="pzone row2 col3" data-zone="rnd"><h4>R&amp;D</h4></section>`;
+    page.appendChild(wrap);
+    return page;
+  }
+
+  function injectNotesInto(page, zoneId, arr, opts){
+    const sec = page.querySelector(`.pzone[data-zone="${zoneId}"]`);
+    arr.forEach(n=>{
+      const card=document.createElement('div'); card.className='pnote';
+      if(n.appliedColor){ card.style.borderColor = getBorderByColor(n.appliedColor); card.style.background = getBgByColor(n.appliedColor); }
+      const t=document.createElement('div'); t.className='ptitle'; t.textContent=n.title||'Note';
+      card.appendChild(t);
+      if(opts.content==='detailed'){
+        const b=document.createElement('div'); b.className='pbody'; b.textContent=n.body||''; card.appendChild(b);
+      }
+      sec.appendChild(card);
+    });
+  }
+
+  window.addEventListener('beforeprint', ()=>buildPrintPages(lastPrintOpts));
+
+  function getBgByColor(i){ return ({1:'#fff8b9',2:'#e8f5e9',3:'#fff0d6',4:'#ffe4e6',5:'#ede9fe',6:'#dbeafe'})[i] || '#fff8b9'; }
+  function getBorderByColor(i){ return ({1:'#e6d76a',2:'#a5d6a7',3:'#ffd39b',4:'#fecdd3',5:'#c4b5fd',6:'#bfdbfe'})[i] || '#e6d76a'; }
+
+  /* Exports */
+  function doExport(kind){
+    if(kind==='json'){
+      const blob=new Blob([JSON.stringify(notes,null,2)],{type:'application/json'});
+      download(blob,'tid-canvas-notes.json');
+    } else if(kind==='csv'){
+      const headers=['id','zone','title','body','comment','x','y','wPct','hPct','mode','order','color','appliedColor','userMoved'];
+      const lines=[headers.join(',')].concat(notes.map(n=>headers.map(h=>csvCell(n[h])).join(',')));
+      const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+      download(blob,'tid-canvas-notes.csv');
+    } else if(kind==='txt'){
+      const lines = notes.slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(n=>`[${n.zone.toUpperCase()}] ${n.title}${n.body?`: ${n.body}`:''}`);
+      const blob=new Blob([lines.join('\n')],{type:'text/plain'});
+      download(blob,'tid-canvas-notes.txt');
+    }
+  }
+  function csvCell(v){ const s = (v==null?'':String(v)).replace(/"/g,'""'); return `"${s}"`; }
+  function download(blob, name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
+
+  /* Importers (PDF fallback kept) */
+  async function onBdaUpload(e){
+    const f=e.target.files[0]; if(!f) return; const name=f.name.toLowerCase();
+    try{
+      if(name.endsWith('.json')){
+        importCards(JSON.parse(await f.text())); alert('JSON imported.');
+      } else if(name.endsWith('.csv')){
+        importCsv(await f.text()); alert('CSV imported.');
+      } else if(name.endsWith('.pdf')){
+        await parsePdf(f); alert('PDF parsed and imported.');
+      }
+    } catch(err){ alert('Import failed: '+err.message); }
+    e.target.value='';
+  }
+
+  function importCards(arr){
+    if(!Array.isArray(arr)) return;
+    arr.forEach(n=>{
+      if(!n.id) n.id=uid();
+      if(!n.zone) n.zone='scope';
+      if(!n.title) n.title='Imported note';
+      if(!n.order) n.order=++seq;
+      if(!n.color) n.color=zoneDefaults[n.zone]||1;
+      if(!n.appliedColor) n.appliedColor=n.color;
+      notes.push(n);
+      createNote(n);
+    });
+    save(); updateZoneCounts(); autoPackZones();
+  }
+
+  function importCsv(text){
+    const lines=text.trim().split('\n'); if(lines.length<2) return;
+    const headers=lines[0].split(',').map(h=>h.replace(/"/g,''));
+    const rows=lines.slice(1).map(line=>{
+      const cells=[]; let inQuote=false,cell='';
+      for(let i=0;i<line.length;i++){
+        const c=line[i];
+        if(c==='"'){ inQuote=!inQuote; } else if(c===','&&!inQuote){ cells.push(cell.replace(/""/g,'"')); cell=''; } else{ cell+=c; }
+      }
+      cells.push(cell.replace(/""/g,'"'));
+      return Object.fromEntries(headers.map((h,i)=>[h,cells[i]||'']));
+    });
+    importCards(rows.map(r=>({
+      id:r.id||uid(), zone:r.zone||'scope', title:r.title||'Imported',
+      body:r.body||'', comment:r.comment||'', x:+r.x||6, y:+r.y||22,
+      wPct:+r.wPct||20, hPct:+r.hPct||9, mode:r.mode||'compact',
+      order:+r.order||++seq, color:+r.color||1, appliedColor:+r.appliedColor||1,
+      userMoved:r.userMoved==='true'
+    })));
+  }
+
+  async function parsePdf(file){
+    const fd=new FormData(); fd.append('pdf',file);
+    const resp=await fetch($('tid-html-canvas').dataset.restBase+$('tid-html-canvas').dataset.restRoute,{method:'POST',body:fd});
+    if(!resp.ok) throw new Error('PDF parse failed');
+    const data=await resp.json();
+    if(data.success && data.cards) importCards(data.cards);
+  }
+
+  function importFromText(){
+    const text=$('tid-textarea').value.trim(); if(!text) return;
+    const lines=text.split('\n').filter(l=>l.trim());
+    const cards=lines.map(line=>{
+      const match=line.match(/^\[(\w+)\]\s*(.+?)(?::\s*(.+))?$/);
+      if(match){
+        const [,zone,title,body]=match;
+        return {id:uid(),zone:zone.toLowerCase(),title:title.trim(),body:(body||'').trim(),order:++seq,color:zoneDefaults[zone.toLowerCase()]||1,appliedColor:zoneDefaults[zone.toLowerCase()]||1};
+      }
+      return {id:uid(),zone:'scope',title:line.trim(),body:'',order:++seq,color:1,appliedColor:1};
+    });
+    importCards(cards); $('tid-textarea').value=''; $('tid-text-area-wrap').style.display='none';
+  }
+
+  /* Init */
+  function init(){
+    notes=load(); seq=Math.max(0,...notes.map(n=>n.order||0));
+    notes.forEach(createNote); updateZoneCounts(); autoPackZones();
+
+    // Zone headers
+    ['scope','customer','competition','offering','organization','rnd'].forEach(zoneId=>{
+      const zoneEl=getZoneEl(zoneId), title=zoneEl.dataset.zoneTitle;
+      const head=document.createElement('div'); head.className='zone-head';
+      head.innerHTML=`<div class="zone-title">${title}</div><span class="zone-count" data-count-for="${zoneId}">0</span><button class="zone-add" data-zone="${zoneId}">+ Note</button>`;
+      zoneEl.appendChild(head);
+    });
+    updateZoneCounts();
+
+    // Zone questions
+    const questions={
+      scope:['What is the core problem we are solving?','What is our mission and vision?','What are our key objectives?','What is our target market size?','What are our success metrics?'],
+      customer:['Who are our target customers?','What are their pain points?','How do they currently solve this problem?','What is their buying process?','What do they value most?'],
+      competition:['Who are our direct competitors?','What are their strengths/weaknesses?','How do we differentiate?','What is our competitive advantage?','What threats do we face?'],
+      offering:['What is our core product/service?','What features are essential?','What is our value proposition?','How do we price our offering?','What is our go-to-market strategy?'],
+      organization:['What skills do we need?','What is our organizational structure?','What is our company culture?','What are our core values?','How do we scale our team?'],
+      rnd:['What technology do we need?','What are our R&D priorities?','What innovations are we pursuing?','What is our technical roadmap?','What are our IP considerations?']
+    };
+    Object.entries(questions).forEach(([zoneId,qs])=>{
+      const zoneEl=getZoneEl(zoneId);
+      const details=document.createElement('details'); details.className='zone-questions';
+      details.innerHTML=`<summary>Key Questions</summary><ul>${qs.map(q=>`<li>${q}</li>`).join('')}</ul>`;
+      zoneEl.appendChild(details);
+    });
+
+    // Grid lines
+    function updateLines(){
+      const rect=board.getBoundingClientRect();
+      const svg=$('tid-lines');
+      svg.innerHTML=`
+        <line class="v1" x1="33.33" y1="0" x2="33.33" y2="100"></line>
+        <line class="v2" x1="66.67" y1="0" x2="66.67" y2="100"></line>
+        <line class="h1" x1="0" y1="50" x2="100" y2="50"></line>`;
+    }
+    updateLines(); window.addEventListener('resize',updateLines);
+
+    // Events
+    board.addEventListener('click',ev=>{
+      if(ev.target.classList.contains('zone-add')){
+        const zoneId=ev.target.dataset.zone; const el=addNote(zoneId); autoPackZone(zoneId,el);
+        setTimeout(()=>{ el.querySelector('.title').focus(); },0);
+      } else if(ev.target.classList.contains('zone-count')){
+        const zoneId=ev.target.dataset.countFor, title=getZoneEl(zoneId).dataset.zoneTitle;
+        showZoneIndex(zoneId,ev.clientX,ev.clientY,title);
+      } else if(ev.target.classList.contains('del')){
+        const el=ev.target.closest('.tid-note'), m=getModel(el);
+        if(m){ notes.splice(notes.indexOf(m),1); save(); } el.remove(); updateZoneCounts();
+      } else if(!ev.target.closest('.tid-note')){ unfocusAll(); removeIndex(); }
+    });
+
+    $('tid-toggle-drawer').onclick=()=>drawer.style.display=drawer.style.display==='flex'?'none':'flex';
+    $('tid-close-drawer').onclick=()=>drawer.style.display='none';
+    $('tid-fullscreen').onclick=()=>{ document.body.classList.toggle('is-fs'); if(document.body.classList.contains('is-fs')){ $('tid-fullscreen').textContent='Exit Fullscreen'; } else{ $('tid-fullscreen').textContent='Fullscreen Canvas'; } };
+
+    $('tid-open-text').onclick=()=>$('tid-text-area-wrap').style.display=$('tid-text-area-wrap').style.display==='block'?'none':'block';
+    $('tid-open-file').onclick=()=>$('tid-bda-file').click();
+    $('tid-bda-file').onchange=onBdaUpload;
+    $('tid-text-import').onclick=importFromText;
+
+    $('tid-open-print').onclick=openOutputModal;
+    $('tid-export-json').onclick=()=>doExport('json');
+    $('tid-export-csv').onclick=()=>doExport('csv');
+    $('tid-export-txt').onclick=()=>doExport('txt');
+    $('tid-clear').onclick=()=>{ if(confirm('Clear all notes?')){ notes=[]; save(); board.querySelectorAll('.tid-note').forEach(n=>n.remove()); updateZoneCounts(); } };
+
+    $('tid-open-colors').onclick=()=>$('tid-color-modal').style.display='block';
+    $('tid-color-close').onclick=()=>$('tid-color-modal').style.display='none';
+
+    // Zone color picker
+    document.querySelectorAll('#tid-color-modal .sw').forEach(sw=>{
+      sw.onclick=()=>{
+        const zone=sw.dataset.zone, color=+sw.dataset.color;
+        zoneDefaults[zone]=color; saveZoneColors(zoneDefaults);
+        board.querySelectorAll(`.tid-zone[data-zone="${zone}"] .tid-note`).forEach(el=>{
+          const m=getModel(el); if(m&&!m.userMoved){ m.color=color; m.appliedColor=color; save(); setNoteColor(el,color); }
+        });
+      };
+    });
+
+    // Load zone colors
+    const saved=loadZoneColors(); if(saved){ Object.assign(zoneDefaults,saved); }
+  }
+
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',init); } else{ init(); }
+</script>
+
